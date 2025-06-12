@@ -1,30 +1,95 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Blogs</title>
   <link rel="stylesheet" href="style.css" />
+  <style>
+    .blog-card {
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 1.5rem auto;
+      max-width: 800px;
+      transition: 0.3s;
+      cursor: pointer;
+      background-color: #f9f9f9;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    }
+
+    .blog-card:hover {
+      transform: scale(1.02);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+    }
+
+    .blog-card h2 {
+      margin-bottom: 0.5rem;
+    }
+
+    .blog-card p {
+      margin-top: 0;
+      color: #555;
+    }
+
+    a.card-link {
+      text-decoration: none;
+      color: inherit;
+    }
+  </style>
 </head>
 <body>
   <header>
-    
-<nav>
-  <ul>
-    <li><a href="index.html">About</a></li>
-    <li><a href="projects.html">Projects</a></li>
-    <li><a href="blogs.html">Blogs</a></li>
-    <li><a href="contact.html">Contact</a></li>
-    <li><a href="gallery.html">Gallery</a></li>
-  </ul>
-</nav>
-
-    <h1>Blogs</h1>
+    <nav>
+      <ul>
+        <li><a href="index.html">About</a></li>
+        <li><a href="research.html">Research</a></li>
+        <li><a href="blogs.html">Blogs</a></li>
+        <li><a href="gallery.html">Gallery</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+    </nav>
   </header>
   <main>
-    <section>
-      <p>This is the blogs section.</p>
-    </section>
-  </main>
+  <section>
+    <h2>Math</h2>
+    <div class="blog-grid">
+      <a href="blogs/randgmres.html" class="blog-box">
+        <div class="blog-card">
+          <h3>Randomized GMRES</h3>
+          <p>A modern take on iterative solvers for large sparse systems.</p>
+        </div>
+      </a>
+      <!-- More math blogs here -->
+    </div>
+  </section>
+
+  <section>
+    <h2>Riff of the week</h2>
+    <div class="blog-grid">
+      <a href="blogs/gospel-theory.html" class="blog-box">
+        <div class="blog-card">
+          <h3>Gospel Chords & Theory</h3>
+          <p>Exploring music theory through the lens of worship music.</p>
+        </div>
+      </a>
+      <!-- More music blogs here -->
+    </div>
+  </section>
+
+  <section>
+    <h2>WoG Blog</h2>
+    <div class="blog-grid">
+      <a href="blogs/romans8.html" class="blog-box">
+        <div class="blog-card">
+          <h3>Romans 8 Breakdown</h3>
+          <p>A deep dive into one of the most comforting chapters in Scripture.</p>
+        </div>
+      </a>
+      <!-- More bible blogs here -->
+    </div>
+  </section>
+</main>
+
 </body>
 </html>

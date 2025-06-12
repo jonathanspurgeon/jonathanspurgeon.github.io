@@ -1,0 +1,100 @@
+<!DOCTYPE html> 
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Blogs</title>
+  <link rel="stylesheet" href="./../style.css" />
+  <style>
+    pre code {
+      background: #1e1e1e;
+      color: #dcdcdc;
+      padding: 1em;
+      display: block;
+      overflow-x: auto;
+      border-radius: 8px;
+      font-family: Consolas, monospace;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section>
+      <article>
+        <h2>🌀 A Deep Dive into Randomized GMRES with Truncated Arnoldi</h2>
+        <p><strong>Date:</strong> June 12, 2025</p>
+
+        <p>Among iterative solvers, GMRES is well-known for handling nonsymmetric systems. But in large-scale settings, classical GMRES becomes expensive. The randomized <strong>sGMRES + k-truncated Arnoldi</strong> method uses sketching and limited orthogonalization to keep things fast and stable.</p>
+
+        <h3>📋 Algorithm: sGMRES + k-truncated Arnoldi</h3>
+        <p>The following pseudocode outlines the method in steps:</p>
+        <pre><code>Input: A ∈ ℂⁿˣⁿ, f ∈ ℂⁿ, x ∈ ℂⁿ, basis size d, truncation k, tolerance tol ≈ O(u⁻¹)
+
+1. Draw random sketching matrix S ∈ ℂˢˣⁿ with s = 2(d+1)
+2. r = f - A x
+3. g = S r
+4. b₁ = r / ‖r‖₂
+   m₁ = A b₁
+5. For j = 2 to d:
+     wⱼ = (I - Πₖ)b * mⱼ₋₁  ← Truncated orthogonalization (k steps)
+     bⱼ = wⱼ / ‖wⱼ‖₂
+     mⱼ = A bⱼ
+6. C = S [m₁, ..., m_d]
+   QR: C = U T
+7. If cond(T) > tol:
+     restart or whiten basis
+8. Solve: T ŷ = U* g
+9. Estimate residual: ‖(I - UU*) g‖₂
+10. Return: x̂ = x + [m₁, ..., m_d] ŷ
+</code></pre>
+
+        <h3>🧠 Step-by-Step Explanation</h3>
+        <ul>
+          <li><strong>Sketching:</strong> The matrix <code>S</code> reduces the dimensionality while preserving subspace structure.</li>
+          <li><strong>Truncated Arnoldi:</strong> Instead of orthogonalizing against all prior vectors, we only use the last <code>k</code>.</li>
+          <li><strong>QR + Least Squares:</strong> Solving in the sketch space gives us an efficient approximate solution.</li>
+        </ul>
+
+        <h3>💻 MATLAB Implementation</h3>
+        <p>Below is a minimal MATLAB implementation of the algorithm:</p>
+        <pre><code>function [x_out, rest] = rand_gmres_truncA(A, f, x0, d, k, tol)
+    n = length(f);
+    S = randn(2*(d+1), n);
+    r = f - A * x0;
+    g = S * r;
+    B = zeros(n, d);
+    M = zeros(n, d);
+
+    B(:,1) = r / norm(r);
+    M(:,1) = A * B(:,1);
+
+    for j = 2:d
+        w = M(:,j-1);
+        for i = max(1,j-k):j-1
+            w = w - (B(:,i)' * w) * B(:,i);  % truncated Gram-Schmidt
+        end
+        B(:,j) = w / norm(w);
+        M(:,j) = A * B(:,j);
+    end
+
+    C = S * M;
+    [U, T] = qr(C, 0);
+
+    if cond(T) > tol
+        warning('Sketch matrix is ill-conditioned. Consider restarting.');
+    end
+
+    y_hat = T \ (U' * g);
+    rest = norm((eye(size(U,1)) - U*U') * g);
+    x_out = x0 + M * y_hat;
+end</code></pre>
+
+        <p>This version assumes <code>A</code> is a matrix, but you can modify it for matrix-free usage (i.e., passing A as a function handle).</p>
+
+        <h3>📘 Final Thoughts</h3>
+        <p><strong>sGMRES + k</strong> is a modern approach for solving large linear systems. By combining sketching and truncated orthogonalization, we preserve the power of Krylov methods while enabling scalability.</p>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
