@@ -242,13 +242,11 @@ section h2 {
 }
 
 section h2::before {
-  content: '## ';
   color: var(--red);
   font-weight: bold;
 }
 
 section h2::after {
-  content: ' ●●●';
   color: var(--cyan);
   font-size: 0.6em;
   vertical-align: middle;

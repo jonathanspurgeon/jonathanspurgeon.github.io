@@ -6,36 +6,65 @@
   <title>Blogs</title>
   <link rel="stylesheet" href="style.css" />
   <style>
-    .blog-card {
-      border: 1px solid #ccc;
-      border-radius: 12px;
-      padding: 1.5rem;
-      margin: 1.5rem auto;
-      max-width: 800px;
-      transition: 0.3s;
-      cursor: pointer;
-      background-color: #f9f9f9;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-    }
+    /* Container for blog cards */
+.blog-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5em;
+  margin-top: 1em;
+  justify-content: flex-start;
+}
 
-    .blog-card:hover {
-      transform: scale(1.02);
-      box-shadow: 0 6px 12px rgba(0,0,0,0.1);
-    }
+/* Individual blog card */
+.blog-card {
+  background: rgba(255, 255, 255, 0.6);
+  border: 2px solid var(--base1);
+  border-left: 6px solid var(--cyan);
+  padding: 1em;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--base02);
+  flex: 1 1 300px; /* Grow/shrink with min width of 300px */
+  max-width: 350px;
+  margin: 1rem; /* space between cards without centering each */
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
 
-    .blog-card h2 {
-      margin-bottom: 0.5rem;
-    }
+/* Hover effect for cards */
+.blog-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(42, 161, 152, 0.3);
+  border-left-color: var(--red);
+}
 
-    .blog-card p {
-      margin-top: 0;
-      color: #555;
-    }
+/* Card heading */
+.blog-card h3 {
+  margin-top: 0;
+  margin-bottom: 0.5em;
+  font-size: 1.2em;
+}
 
-    a.card-link {
-      text-decoration: none;
-      color: inherit;
-    }
+/* Card description */
+.blog-card p {
+  margin: 0;
+  color: var(--base01);
+  font-size: 0.95em;
+}
+
+/* Link style for entire card */
+a.card-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Remove unwanted vertical line (from prior plugin?) */
+a.card-link::after {
+  display: none !important;
+}
+
+
+
+
   </style>
 </head>
 <body>
@@ -53,21 +82,20 @@
   <main>
   <section>
     <h2>Math</h2>
-    <div class="blog-grid">
-      <a href="blogs/randgmres.html" class="blog-box">
-        <div class="blog-card">
-          <h3>Randomized GMRES</h3>
-          <p>A modern take on iterative solvers for large sparse systems.</p>
-        </div>
-      </a>
-      <!-- More math blogs here -->
-    </div>
+    <div class="blog-list">
+    <a href="blogs/randgmres.html" class="card-link">
+      <div class="blog-card">
+        <h3>Randomized GMRES</h3>
+        <p>A modern take on iterative solvers for large sparse systems.</p>
+      </div>
+    </a>
+    
   </section>
 
   <section>
     <h2>Riff of the week</h2>
-    <div class="blog-grid">
-      <a href="blogs/gospel-theory.html" class="blog-box">
+    <div class="blog-list">
+      <a href="blogs/gospel-theory.html" class="card-link">
         <div class="blog-card">
           <h3>Gospel Chords & Theory</h3>
           <p>Exploring music theory through the lens of worship music.</p>
@@ -79,8 +107,8 @@
 
   <section>
     <h2>WoG Blog</h2>
-    <div class="blog-grid">
-      <a href="blogs/romans8.html" class="blog-box">
+    <div class="blog-list">
+      <a href="blogs/romans8.html" class="card-link">
         <div class="blog-card">
           <h3>Romans 8 Breakdown</h3>
           <p>A deep dive into one of the most comforting chapters in Scripture.</p>
