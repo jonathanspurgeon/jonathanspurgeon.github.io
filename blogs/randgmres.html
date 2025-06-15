@@ -1,10 +1,14 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Blogs</title>
   <link rel="stylesheet" href="./../style.css" />
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  </script>
   <style>
     pre code {
       background: #1e1e1e;
@@ -21,78 +25,132 @@
   <main>
     <section>
       <article>
-        <h2>🌀 A Deep Dive into Randomized GMRES with Truncated Arnoldi</h2>
-        <p><strong>Date:</strong> June 12, 2025</p>
+        <h2>Randomized GMRES: Fairly accurate. Absurdly fast.</h2>
+        <p><strong>Date:</strong> June 14, 2025</p>
 
-        <p>Among iterative solvers, GMRES is well-known for handling nonsymmetric systems. But in large-scale settings, classical GMRES becomes expensive. The randomized <strong>sGMRES + k-truncated Arnoldi</strong> method uses sketching and limited orthogonalization to keep things fast and stable.</p>
+        <p>
+            It’s only fitting that my first math blog draws from my core research area: randomized numerical linear algebra. 
+            This post is aimed at readers who’ve taken an introductory course on linear algebra and might come in directly handy 
+            if your boss ever storms in and says, “Son, you better solve this supermassive linear system, and it better be quick.”
+            If you’re thinking, “Finally, I’ve mastered Gauss-Seidel precisely for this moment,” I’m here to say: you can do better, son.
+        </p>
+        <h3>Let's get serious</h3>
+        <p>
+          When dealing with massive linear systems \( Ax = b \) that arise all the time in scientific computing and engineering, traditional iterative methods can become computationally prohibitive. 
+          Enter randomized algorithms: fast, scalable, robust, and especially comes in clutch when fast approximate answers are more valuable than slow exact ones.
+          This article covers randomized GMRES — an elegant amalgamation of the 
+          classical Generalized Minimum Residual method with randomization techniques that promises to improve solving large-scale systems both time-wise and memory-wise.
+        </p>
 
-        <h3>📋 Algorithm: sGMRES + k-truncated Arnoldi</h3>
-        <p>The following pseudocode outlines the method in steps:</p>
-        <pre><code>Input: A ∈ ℂⁿˣⁿ, f ∈ ℂⁿ, x ∈ ℂⁿ, basis size d, truncation k, tolerance tol ≈ O(u⁻¹)
+        <h3>Classical GMRES Foundation</h3>
 
-1. Draw random sketching matrix S ∈ ℂˢˣⁿ with s = 2(d+1)
-2. r = f - A x
-3. g = S r
-4. b₁ = r / ‖r‖₂
-   m₁ = A b₁
-5. For j = 2 to d:
-     wⱼ = (I - Πₖ)b * mⱼ₋₁  ← Truncated orthogonalization (k steps)
-     bⱼ = wⱼ / ‖wⱼ‖₂
-     mⱼ = A bⱼ
-6. C = S [m₁, ..., m_d]
-   QR: C = U T
-7. If cond(T) > tol:
-     restart or whiten basis
-8. Solve: T ŷ = U* g
-9. Estimate residual: ‖(I - UU*) g‖₂
-10. Return: x̂ = x + [m₁, ..., m_d] ŷ
-</code></pre>
+        <p>
+          Before plunging into the randomized variant, let's establish the mathematical foundation. Given the linear system \( Ax = b \) where \( A \in \mathbb{R}^{n \times n} \), classical GMRES constructs an orthonormal basis for the Krylov subspace. Now, an order-j Krylov subspace is defined as
+        </p>
 
-        <h3>🧠 Step-by-Step Explanation</h3>
+        <p> $$\mathcal{K}_j(A, r_0) = \text{span}\{r_0, Ar_0, A^2r_0, \ldots, A^{j-1}r_0\}$$ </p>
+
+        <p>
+          where \( r_0 = b - Ax_0 \) is the initial residual.
+        </p>
+
+        <p>
+          GMRES finds the approximate solution \( x_{m-1} \) that minimizes the residual norm \( \|b - Ax_{m-1}\|_2 \) over all vectors in \( x_0 + \mathcal{K}_{m-1}(A, r_0) \). This is achieved through the Arnoldi process, which builds an orthonormal basis \( Q_m \in \mathbb{R}^{n \times m}\) and constructs an upper Hessenberg matrix \( H_m \in \mathbb{R}^{m \times (m-1)}\) such that:
+        </p>
+
+        <p> $$AQ_{m-1} = Q_m H_m$$ </p>
+
+        <p>
+          The approximate solution in the orthonormalized Krylov subspace \( x_{m-1} = Q_{m-1} y\) for some \(y \in \mathbb{R}^{m-1}\)is then found by solving a least-squares problem in the reduced space, i.e, \( \|\theta(b - Ax_{m-1})\|_2^2 \). Now, while mathematically elegant, classical GMRES faces challenges such as massive memory costs (storing \( m \) vectors of size \( n \)), orthogonalization cost \( \mathcal{O}(nm^2) \), and numerical instability for ill-conditioned systems.
+        </p>
+
+        <h3>You can do better, son: Enter Randomization</h3>
+
+        <p>
+          Randomized GMRES addresses these issues through a brilliant idea: instead of maintaining orthogonality in the full \( \mathbb{R}^n \), it works in a smaller \( k \)-dimensional sketched space, where \( k \ll n \).
+        </p>
+
+        <h3>The Sketching Matrix</h3>
+
+        <p>
+          The heart of randGMRES lies in the sketching matrix \( \Theta \in \mathbb{R}^{k \times n} \), a randomized dimensionality reduction operator. Common choices include Gaussian and Rademacher matrices, sub-sampled randomized Hadamard/Fourier transforms, and CountSketch matrix.
+        </p>
+
+        <p>
+          The sketching dimension \( k \) is typically chosen as:
+        </p>
+
+        <p> $$k = \min\left(n, \left\lceil \frac{2m \log n}{\log m} \right\rceil\right)$$ </p>
+
+        <p>
+          This balances accuracy and efficiency, preserving key geometric properties of the original system.
+        </p>
+
+        <h3>Randomized Gram-Schmidt Process</h3>
+
+        <p>
+          randGMRES replaces classical orthogonalization with a randomized Gram-Schmidt (RGS) process:
+        </p>
+
+        <ol>
+          <li>Sketch each Krylov vector \( q \): compute \( s = \Theta q \)</li>
+          <li>Maintain sketched orthogonality: \( S = [s_1, s_2, ..., s_m] \) with \( S^T S \approx I \)</li>
+          <li>Solve sketched least-squares to find the update direction</li>
+        </ol>
+
+        <p>
+          Orthogonality in the sketched space approximately preserves orthogonality in the original space, with only \( \mathcal{O}(k) \) storage and \( \mathcal{O}(km) \) work per iteration.
+        </p>
+
+        <pre><code>Given: A ∈ &#8477<sup>n &#215 n</sup>, b ∈ &#8477<sup>n</sup>, restart parameter m
+Initial guess: x<sub>0</sub>
+Generate: Sketching matrix Θ
+
+1. First iteration 
+
+        <strong>w</strong><sub>1</sub> = b - Ax<sub>0</sub> 
+        <strong>p</strong><sub>1</sub> = <strong>s</strong><sub>1</sub> = Θ<strong>w</strong><sub>1</sub>
+        r<sub>1, 1</sub> = ||<strong>s</strong><sub>1</sub>||
+        <strong>s</strong><sub>1</sub> = <strong>s</strong><sub>1</sub> / r<sub>1, 1</sub>, <strong>q</strong><sub>1</sub> = <strong>q</strong><sub>1</sub> / r<sub>1, 1</sub>
+
+2. Build the Krylov subspace
+
+        For j = 2, 3, ..., m:
+          Compute <strong>w</strong><sub>j</sub> = <strong>Aq<sub>j-1</sub></strong>
+          Sketch: <strong>p</strong><sub>j</sub> = Θ<strong>w</strong><sub>j</sub>
+          Solve k &#215 (j-1) sketched least-squares: <strong>R</strong><sub>(1:j-1, j)</sub> = argmin<sub><strong>r</strong></sub> ||<strong>S</strong><sub>(:, 1:j-1)</sub><strong>r</strong> - <strong>p</strong><sub>j</sub>||<sub>2</sub>
+          Compute Projection of <strong>w</strong><sub>j</sub> : <strong>q'</strong><sub>j</sub> = (<strong>w</strong><sub>j</sub> - <strong>Q</strong><sub>(:, 1:j-1)</sub> <strong>R</strong><sub>(1:j-1, j)</sub>)
+          Sketch <strong>q'</strong><sub>j</sub> :  <strong>s'</strong><sub>j</sub> = ||Θ <strong>q'</strong><sub>j+1</sub>||<sub>2</sub>
+          Compute the sketched norm r<sub>j+1,j+1</sub> = ||<strong>s'</strong><sub>j</sub>||<sub>2</sub>
+          Scale vectors: <strong>q</strong><sub>j</sub> = <strong>q'</strong><sub>j</sub>/r<sub>j,j</sub>, <strong>s</strong><sub>j</sub> = <strong>s'</strong><sub>j</sub>/r<sub>j,j</sub>
+
+3. Solve Reduced Problem: Find y ∈ &#8477<sup>m-1</sup> that minimizes ||r<sub>1,1</sub> e<sub>1</sub> - H<sub>m</sub> y||<sub>2</sub> = ||Θ(AQ<sub>m-1</sub>y - b)||<sub>2</sub>
+4. Update Solution: x<sub>m-1</sub> = x<sub>0</sub> + <strong>Q</strong><sub>m-1</sub> y
+        </code></pre>
+
+        <p>
+          A critical and costly step is solving the sketched least-squares problem. For relatively smaller problems, Givens rotations or Householder transformation based approaches yield a negligible computational cost. For slightly larger problems, cheaper strategies include solving the normal equations \( S_{i-1}^T S_{i-1} r = S_{i-1}^T p_i \) using 
+          Richardson iterations where several iterations of the form \( r^{(k+1)} = r^{(k)} + S_{i-1}^T(p_i - S_{i-1}r^{(k)}) \) is applied
+          or gradient descent based algorithms such as conjugate gradient method. 
+          The Richardson iterations are particularly effective because the sketched matrix \( S \) is approximately orthonormal, making the system well-conditioned.
+        </p>
+
+        <h3>Computational Advantages</h3>
+
         <ul>
-          <li><strong>Sketching:</strong> The matrix <code>S</code> reduces the dimensionality while preserving subspace structure.</li>
-          <li><strong>Truncated Arnoldi:</strong> Instead of orthogonalizing against all prior vectors, we only use the last <code>k</code>.</li>
-          <li><strong>QR + Least Squares:</strong> Solving in the sketch space gives us an efficient approximate solution.</li>
+          <li><strong>Memory Complexity</strong><br>
+          </li>
+          <li><strong>Computational Complexity</strong><br>
         </ul>
 
-        <h3>💻 MATLAB Implementation</h3>
-        <p>Below is a minimal MATLAB implementation of the algorithm:</p>
-        <pre><code>function [x_out, rest] = rand_gmres_truncA(A, f, x0, d, k, tol)
-    n = length(f);
-    S = randn(2*(d+1), n);
-    r = f - A * x0;
-    g = S * r;
-    B = zeros(n, d);
-    M = zeros(n, d);
+        <h3>Error Analysis</h3>
 
-    B(:,1) = r / norm(r);
-    M(:,1) = A * B(:,1);
+        <h3>Conclusion</h3>
 
-    for j = 2:d
-        w = M(:,j-1);
-        for i = max(1,j-k):j-1
-            w = w - (B(:,i)' * w) * B(:,i);  % truncated Gram-Schmidt
-        end
-        B(:,j) = w / norm(w);
-        M(:,j) = A * B(:,j);
-    end
+        <p>
+          
+        </p>
 
-    C = S * M;
-    [U, T] = qr(C, 0);
-
-    if cond(T) > tol
-        warning('Sketch matrix is ill-conditioned. Consider restarting.');
-    end
-
-    y_hat = T \ (U' * g);
-    rest = norm((eye(size(U,1)) - U*U') * g);
-    x_out = x0 + M * y_hat;
-end</code></pre>
-
-        <p>This version assumes <code>A</code> is a matrix, but you can modify it for matrix-free usage (i.e., passing A as a function handle).</p>
-
-        <h3>📘 Final Thoughts</h3>
-        <p><strong>sGMRES + k</strong> is a modern approach for solving large linear systems. By combining sketching and truncated orthogonalization, we preserve the power of Krylov methods while enabling scalability.</p>
       </article>
     </section>
   </main>
