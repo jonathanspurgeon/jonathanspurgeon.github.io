@@ -76,20 +76,10 @@
           The heart of randGMRES lies in the sketching matrix \( \Theta \in \mathbb{R}^{k \times n} \), a randomized dimensionality reduction operator. Common choices include Gaussian and Rademacher matrices, sub-sampled randomized Hadamard/Fourier transforms, and CountSketch matrix.
         </p>
 
-        <p>
-          The sketching dimension \( k \) is typically chosen as:
-        </p>
-
-        <p> $$k = \min\left(n, \left\lceil \frac{2m \log n}{\log m} \right\rceil\right)$$ </p>
-
-        <p>
-          This balances accuracy and efficiency, preserving key geometric properties of the original system.
-        </p>
-
         <h3>Randomized Gram-Schmidt Process</h3>
 
         <p>
-          randGMRES replaces classical orthogonalization with a randomized Gram-Schmidt (RGS) process:
+          randGMRES applies the randomized Gram-Schmidt (RGS) process to orthonormalize the Krylov subspace:
         </p>
 
         <ol>
